@@ -1,0 +1,6 @@
+name: Image Search User Interface
+description: Provides user Interfaces for searching images
+package: IUT
+
+type: module
+core: 8.x
