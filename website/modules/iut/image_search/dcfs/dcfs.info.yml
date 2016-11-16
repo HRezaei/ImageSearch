@@ -1,0 +1,4 @@
+name: Distance-Computation-Free Search
+type: module
+description: PHP implementation of the algorithm DCF search
+core: 8.x
