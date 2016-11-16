@@ -1,10 +1,10 @@
 <?php
 /**
  * @file
- * Contains \Drupal\iut\image_search\ui\UserInterfaceController.
+ * Contains \Drupal\UserInterface\UserInterfaceController.
  */
 
-namespace Drupal\user_interface;
+namespace Drupal\UserInterface;
 
 
 use Drupal\Core\Controller\ControllerBase;
@@ -12,6 +12,7 @@ use Drupal\Core\Controller\ControllerBase;
 
 class UserInterfaceController extends ControllerBase {
   public function main_form() {
-    return Drupal\drupal_get_form('image_search_form');
+  	$form = \Drupal::formBuilder()->getForm('Drupal\UserInterface\Form\SearchForm');
+    return $form;
   }
 }

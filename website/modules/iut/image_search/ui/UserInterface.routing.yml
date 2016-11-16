@@ -2,6 +2,6 @@ user_interface.home:
   path: '/search/images'
   defaults:
     _title: 'Search Images'
-    _controller: '\Drupal\user_interface\UserInterfaceController::main_form'
+    _controller: '\Drupal\UserInterface\UserInterfaceController::main_form'
   requirements:
     _permission: 'access content'
