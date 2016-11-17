@@ -52,8 +52,30 @@ class DCFSearch {
 		
 		$subcodes = $this->generateSubcodes($query);
 		$pseudo_codes = $this->generatePseudoCodes($subcodes, $r);
+		$combinations = $this->generateCombinations($r);
 		
-		
+		$result = [];
+		foreach ($combinations as $comb_index => $comb) {
+			$comb_result = [];
+			foreach ($comb as $key => $num) {
+				if(empty($can[$key])) {
+					$can[$key] = [];
+				}
+				$code = $subcodes[$key];
+				for ($i=0; $i <= $num; $i++) {
+					foreach ($pseudo_codes[$code][$i] as $query) {
+						$hash = $this->hashFunction($query, $key);
+						$result = $this->redis->sGetMembers($hash);
+						$can[$key] = array_merge($can[$key], $result);
+					}
+				}
+				
+				$comb_result = (!$key) ? $can[$key] : array_intersect($comb_result, $can[$key]);
+				$can[$key] = [];
+			}
+			$result = array_merge($result, $comb_result);
+		}
+		return $result;		
 	}
 	
 	protected function generateSubcodes($q) {
@@ -62,16 +84,15 @@ class DCFSearch {
 	
 	protected function generatePseudoCodes($codes, $r) {
 		
-		$combinations = $this->generateCombinations($r);
 		$flipers = $this->getFlipers($r);
 		
 		$pseudos = [];
-		foreach ($combinations as $comb) {
-			foreach ($comb as $i => $num) {
-				$code = $codes[$i];
-				if(!empty($pseudos[$code][$num])) continue;
+		foreach ($codes as $code) {
+			if(!empty($pseudos[$code])) continue;
+			$pseudos[$code][0][] = $code;
+			for ($num=1; $num<=$r; $num++) {
 				foreach ($flipers[$num] as $fliper) {
-					$pseudos[$code][$num][] = decbin(bindec($code) ^ bindec($fliper));
+					$pseudos[$code][$num][] = str_pad(decbin(bindec($code) ^ bindec($fliper)), 8, '0', STR_PAD_LEFT);
 				}				
 			}
 		}
