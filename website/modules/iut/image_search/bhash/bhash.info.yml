@@ -1,0 +1,5 @@
+name: BlockHash Integration
+type: module
+description: Integrates BlockHash into Drupal
+package = IUT
+core: 8.x
