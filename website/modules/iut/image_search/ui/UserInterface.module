@@ -1,3 +1,65 @@
 <?php
 
-?>
+
+namespace Drupal\UserInterface;
+
+use \Drupal\Core\Database\StatementInterface;
+use Drupal\user\UserInterface;
+
+define('IMAGES_TABLE', 'iut_images');
+
+
+/**
+ * 
+ * @param string | array $id
+ */
+function load_image($id) {
+	$query = db_select(IMAGES_TABLE, 'm')
+		->fields('m');
+	
+	if(is_string($id)) {
+		$query->condition('image_id', $id);
+	}
+	elseif (is_array($id)) {
+		$query->condition('image_id', $id,  'IN');
+	}
+	$image = $query->execute()
+		->fetchAll();
+	
+	return $image;
+}
+
+
+function load_image_by_hash($hash) {
+	$image = db_select(IMAGES_TABLE, 'm')
+	->fields('m')
+	->condition('bhash', $hash)
+	->execute()
+	->fetchAll();
+
+	return $image;
+}
+
+
+function insert_image($uri, $hash) {
+	$inserted = db_insert(IMAGES_TABLE)
+		->fields([
+			'uri' => $uri,
+			'bhash' => $hash
+		])
+		->execute();
+		
+	return $inserted;
+}
+
+
+
+function hex2bin($number) {
+	
+	$slices = str_split($number, 1);
+	$output = '';
+	foreach ($slices as $num) {
+		$output .= str_pad(base_convert($num, 16, 2), 4, '0', STR_PAD_LEFT);
+	}
+	return $output;
+}
