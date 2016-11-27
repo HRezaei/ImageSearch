@@ -32,7 +32,7 @@ class SearchForm extends FormBase {
 				'#type' => 'file',
 				'#title' => $this->t('Upload your image'),
 				'#multiple' => FALSE,
-				'#description' => $this->t("Your image will ne indexed in our development phase")
+				'#description' => $this->t("Your image will be indexed in our development phase")
 		);
 		$form['actions']['#type'] = 'actions';
 		$form['actions']['submit'] = array(
@@ -42,6 +42,12 @@ class SearchForm extends FormBase {
 		);
 		
 		if($form_state->isRebuilding()) {
+			
+			$form['debug_info'] = [
+				'#type' => 'markup',
+				'#markup' => $form_state->getValue('duration') .'<br/>'
+			];
+			
 			$images = $form_state->getStorage();
 			
 			foreach ($images as $image) {
@@ -66,6 +72,7 @@ class SearchForm extends FormBase {
 		//$file = $form_state->getValue('sample_image');
 		if (!$file) {
 			$form_state->setErrorByName('sample_image', $this->t('Could not upload image. Please try again.'));
+			return ;
 		}
 		$file = $file[0];
 		$uri = $file->getFileUri();
@@ -95,13 +102,26 @@ class SearchForm extends FormBase {
 		if (!$result) {
 			
 			//@todo move file to a permanent directory
+// 			$file = new ([]);
+// 			$file->setFileUri($uri);
+			$ext = pathinfo($uri, PATHINFO_EXTENSION);
+			$permanent_uri = 'public://images/' . $hash . '.' .$ext;
+			$moved_path = file_unmanaged_move($uri, $permanent_uri);
 			
-			$image_id = \Drupal\UserInterface\insert_image($uri, $hash);
-			
-			$dcfs->index($query, $image_id);
+			if($moved_path) {
+				
+				$image_id = \Drupal\UserInterface\insert_image($permanent_uri, $hash);
+				
+				$dcfs->index($query, $image_id);
+			}
 		}
+		file_unmanaged_delete($uri);
+		//$search_result = [1, 2];
+		$time_start = microtime(TRUE);
+		$search_result = $dcfs->search($query, 5);
+		$duration = microtime(TRUE) - $time_start;
 		
-		$search_result = [3, 3]/*$dcfs->search($query, 4)*/;
+		$form_state->setValue("duration", $duration);
 		
 		if(!$search_result) {
 			drupal_set_message('No similar image is found!', 'error');
