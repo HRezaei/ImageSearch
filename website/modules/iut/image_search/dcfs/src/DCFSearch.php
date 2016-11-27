@@ -4,6 +4,8 @@
 namespace Drupal\dcfs;
 
 use \Drupal\redis\Client;
+use Drupal\Core\Cache\Cache;
+use function GuzzleHttp\json_decode;
 
 class DCFSearch {
 	
@@ -73,6 +75,7 @@ class DCFSearch {
 				$comb_result = (!$key) ? $can[$key] : array_intersect($comb_result, $can[$key]);
 				$can[$key] = [];
 			}
+			//result first time has 2 element, in next loops becomes 1!!!!
 			$result = array_merge($result, $comb_result);
 		}
 		return $result;		
@@ -104,7 +107,7 @@ class DCFSearch {
 		$cache_name = 'flipers-' . $r;
 		$cache = $this->redis->get($cache_name);
 		if($cache) {
-			return unserialize($cache);
+			return json_decode($cache);
 		}
 		
 		$ones = array_pad([], $this::$lengthOfSubCodes, 0);
@@ -119,12 +122,18 @@ class DCFSearch {
 			}
 		}
 		
-		$this->redis->set($cache_name, serialize($output));
+		$this->redis->set($cache_name, json_encode($output));
 		
 		return $output;
 	}
 	
 	public function generateCombinations($r) {
+		
+		$cache_id = "iut_combs_$r";
+		$cache = \Drupal::cache()->get($cache_id);
+		if($cache) {
+			return $cache->data;
+		}
 		
 		$list = $this->fractionalize($r);
 		$output = [];
@@ -133,6 +142,8 @@ class DCFSearch {
 			$combinations = $this->combinations($value);
 			$output = array_merge($output, $combinations);
 		}
+		
+		\Drupal::cache()->set($cache_id, $output);
 		
 		return $output;
 	}
