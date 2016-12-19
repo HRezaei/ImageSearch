@@ -119,7 +119,7 @@ class DCFSearch {
 				'skipped_combs' => $skipped_combs,
 				'passed_combs' => $passed_combs
 			]
-		return $result;		
+		];		
 	}
 	
 	protected function generateSubcodes($q) {
@@ -129,12 +129,12 @@ class DCFSearch {
 	protected function generatePseudoCodes($codes, $r) {
 		
 		$flipers = $this->getFlipers($r);
-		
+		$max_bits_to_flip = min($r, $this::$lengthOfSubCodes);
 		$pseudos = [];
 		foreach ($codes as $code) {
 			if(!empty($pseudos[$code])) continue;
 			$pseudos[$code][0][] = $code;
-			for ($num=1; $num<=$r; $num++) {
+			for ($num=1; $num<=$max_bits_to_flip; $num++) {
 				foreach ($flipers[$num] as $fliper) {
 					$pseudos[$code][$num][] = str_pad(decbin(bindec($code) ^ bindec($fliper)), 8, '0', STR_PAD_LEFT);
 				}				
@@ -145,25 +145,25 @@ class DCFSearch {
 	
 	public function getFlipers($r) {
 		
-		$cache_name = 'flipers-' . $r;
-		$cache = $this->redis->get($cache_name);
+		$cache_name = "flipers-$r-" . $this::$lengthOfSubCodes;
+		$cache = \Drupal::cache()->get($cache_name);
 		if($cache) {
-			return json_decode($cache);
+			return json_decode($cache->data);
 		}
 		
 		$ones = array_pad([], $this::$lengthOfSubCodes, 0);
 		
 		$output[0][] = implode('', $ones);
 		
-		for ($i=1; $i<=$r; $i++) {
-			$ones[$i] = 1;
+		for ($i=1; $i <= $this::$lengthOfSubCodes; $i++) {
+			$ones[$i-1] = 1;
 			$combs = $this->combinations($ones);
 			foreach ($combs as $comb) {
 				$output[$i][] = implode('', $comb);
 			}
 		}
 		
-		$this->redis->set($cache_name, json_encode($output));
+		\Drupal::cache()->set($cache_name, json_encode($output));
 		
 		return $output;
 	}
@@ -173,7 +173,7 @@ class DCFSearch {
 		$cache_id = "iut_combs_$r";
 		$cache = \Drupal::cache()->get($cache_id);
 		if($cache) {
-			return $cache->data;
+			return json_decode($cache->data);
 		}
 		
 		$list = $this->fractionalize($r);
@@ -184,7 +184,7 @@ class DCFSearch {
 			$output = array_merge($output, $combinations);
 		}
 		
-		\Drupal::cache()->set($cache_id, $output);
+		\Drupal::cache()->set($cache_id, json_encode($output));
 		
 		return $output;
 	}
@@ -194,15 +194,25 @@ class DCFSearch {
         if($sum == 0) return [[0]];
         if ($sum == 1)return [1];
         
-        $outputs = [$sum];
+        $outputs = ($sum <= $this::$lengthOfSubCodes) ? [$sum] : [];
+        
         for ($i = $sum-1; $i > 0; $i--) {
+            if ($i > $this::$lengthOfSubCodes) {
+            	continue;
+            }
             $result_set = $this->fractionalize($sum - $i);
+            
             foreach ($result_set as &$result) {
                 $result = explode(',', $result);
-                $result[] = $i;
+                if(count($result) >= $this::$lengthOfSubCodes) {
+            		$result = '';
+                	continue;//Our fraction parts must be at most equal to $this::$lengthOfSubCodes
+            	}
+            	$result[] = $i;
                 sort($result);
                 $result = implode(',', $result);
             }
+            $result_set = array_filter($result_set);
             $outputs = array_merge($outputs, $result_set);
         }
         return array_unique($outputs);
