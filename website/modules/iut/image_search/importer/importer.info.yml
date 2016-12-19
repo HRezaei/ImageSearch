@@ -1,0 +1,5 @@
+name: Image Importer
+type: module
+description: Imports images from any given folder and indexes them
+package: IUT
+core: 8.x
