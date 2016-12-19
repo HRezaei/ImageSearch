@@ -68,7 +68,9 @@ class SearchForm extends FormBase {
 	 * {@inheritdoc}
 	 */
 	public function validateForm(array &$form, FormStateInterface $form_state) {
-		$file = file_save_upload('sample_image', [], 'temporary://iut_upload/');		
+		$directory = 'temporary://iut_upload/';
+		file_prepare_directory($directory, FILE_CREATE_DIRECTORY|FILE_MODIFY_PERMISSIONS);
+		$file = file_save_upload('sample_image', [], $directory);		
 		//$file = $form_state->getValue('sample_image');
 		if (!$file) {
 			$form_state->setErrorByName('sample_image', $this->t('Could not upload image. Please try again.'));
@@ -100,7 +102,7 @@ class SearchForm extends FormBase {
 		$dcfs = new \Drupal\dcfs\DCFSearch();
 		
 		if (!$result) {
-			
+			drupal_set_message("Your image was new and now is indexed");
 			//@todo move file to a permanent directory
 // 			$file = new ([]);
 // 			$file->setFileUri($uri);
@@ -121,7 +123,7 @@ class SearchForm extends FormBase {
 		$search_result = $dcfs->search($query, 5);
 		$duration = microtime(TRUE) - $time_start;
 		
-		$form_state->setValue("duration", $duration);
+		$form_state->setValue("duration", $duration . ' seconds');
 		
 		if(!$search_result) {
 			drupal_set_message('No similar image is found!', 'error');

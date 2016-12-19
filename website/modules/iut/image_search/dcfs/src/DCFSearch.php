@@ -60,20 +60,35 @@ class DCFSearch {
 		foreach ($combinations as $comb_index => $comb) {
 			$comb_result = [];
 			foreach ($comb as $key => $num) {
-				if(empty($can[$key])) {
-					$can[$key] = [];
-				}
-				$code = $subcodes[$key];
-				for ($i=0; $i <= $num; $i++) {
-					foreach ($pseudo_codes[$code][$i] as $query) {
-						$hash = $this->hashFunction($query, $key);
-						$result = $this->redis->sGetMembers($hash);
-						$can[$key] = array_merge($can[$key], $result);
+				if(!isset($can_cummulative[$key][$num])) {
+					$can_cummulative[$key][$num] = [];
+					$code = $subcodes[$key];
+					for ($i=0; $i <= $num; $i++) {
+						if(!isset($can[$key][$i])) {
+							$hashes = [];
+							foreach ($pseudo_codes[$code][$i] as $query) {
+								$hashes[] = $this->hashFunction($query, $key);
+							}
+							$can[$key][$i] = array_filter(call_user_func_array([$this->redis,'sUnion'], $hashes));
+						}
+						//This merge can be done by redis if we use sunionStore in previous lines
+						$can_cummulative[$key][$num] = array_merge($can_cummulative[$key][$num], $can[$key][$i]);
 					}
 				}
 				
-				$comb_result = (!$key) ? $can[$key] : array_intersect($comb_result, $can[$key]);
-				$can[$key] = [];
+				if (empty($can_cummulative[$key][$num])) {
+					continue 2;
+				}
+				
+				if (!$key) {
+					$comb_result = $can_cummulative[$key][$num];
+				}
+				else {
+				 	$comb_result = array_intersect($comb_result, $can_cummulative[$key][$num]);
+				 	if(empty($comb_result)) {
+						continue 2;				 		
+				 	}
+				}
 			}
 			//result first time has 2 element, in next loops becomes 1!!!!
 			$result = array_merge($result, $comb_result);
