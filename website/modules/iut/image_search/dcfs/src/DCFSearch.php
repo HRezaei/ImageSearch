@@ -51,11 +51,17 @@ class DCFSearch {
 	
 	
 	function search($query, $r) {
+		$start = microtime(TRUE);
 		
 		$subcodes = $this->generateSubcodes($query);
 		$pseudo_codes = $this->generatePseudoCodes($subcodes, $r);
 		$combinations = $this->generateCombinations($r);
 		
+		$redis_time = 0;
+		$intersect_time = 0;
+		$merge_time = 0;
+		$skipped_combs = 0;
+		$passed_combs = 0;
 		$result = [];
 		foreach ($combinations as $comb_index => $comb) {
 			$comb_result = [];
@@ -69,7 +75,9 @@ class DCFSearch {
 							foreach ($pseudo_codes[$code][$i] as $query) {
 								$hashes[] = $this->hashFunction($query, $key);
 							}
+							$redis_start = microtime(TRUE);
 							$can[$key][$i] = array_filter(call_user_func_array([$this->redis,'sUnion'], $hashes));
+							$redis_time += microtime(TRUE) - $redis_start;
 						}
 						//This merge can be done by redis if we use sunionStore in previous lines
 						$can_cummulative[$key][$num] = array_merge($can_cummulative[$key][$num], $can[$key][$i]);
@@ -77,6 +85,7 @@ class DCFSearch {
 				}
 				
 				if (empty($can_cummulative[$key][$num])) {
+					$skipped_combs++;
 					continue 2;
 				}
 				
@@ -84,15 +93,32 @@ class DCFSearch {
 					$comb_result = $can_cummulative[$key][$num];
 				}
 				else {
+					$intersect_start = microtime(TRUE);
 				 	$comb_result = array_intersect($comb_result, $can_cummulative[$key][$num]);
+				 	$intersect_time += (microtime(TRUE) - $intersect_start);
 				 	if(empty($comb_result)) {
+				 		$skipped_combs++;
 						continue 2;				 		
 				 	}
 				}
+				$passed_combs++;
 			}
-			//result first time has 2 element, in next loops becomes 1!!!!
+			$merge_start = microtime(TRUE);
 			$result = array_merge($result, $comb_result);
+		 	$result = array_unique($result);
+			$merge_time += (microtime(TRUE) - $merge_start);
 		}
+		
+		return [
+			'result' => $result,
+			'info' => [
+				'total_time' => microtime(TRUE) - $start,
+				'redis_time' => $redis_time,
+				'intersect_time' => $intersect_time,
+				'merge_time' => $merge_time,
+				'skipped_combs' => $skipped_combs,
+				'passed_combs' => $passed_combs
+			]
 		return $result;		
 	}
 	

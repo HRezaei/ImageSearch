@@ -34,8 +34,13 @@ class SearchForm extends FormBase {
 				'#multiple' => FALSE,
 				'#description' => $this->t("Your image will be indexed in our development phase")
 		);
-		$form['actions']['#type'] = 'actions';
-		$form['actions']['submit'] = array(
+		$form['radius'] = array(
+				'#type' => 'number',
+				'#title' => $this->t('Weight'),
+				'#default_value' => 7,
+		);
+
+		$form['submit'] = array(
 				'#type' => 'submit',
 				'#value' => $this->t('Search'),
 				'#button_type' => 'primary',
@@ -43,20 +48,37 @@ class SearchForm extends FormBase {
 		
 		if($form_state->isRebuilding()) {
 			
+			$storage = $form_state->getStorage();
+			
 			$form['debug_info'] = [
-				'#type' => 'markup',
-				'#markup' => $form_state->getValue('duration') .'<br/>'
+				'#type' => 'details',
+				'#title' => 'Info',
+				'#open' => TRUE,
+				'body_content' => [
+					'#markup' => 'Times are in seconds<br/><pre>' .
+					print_r($storage['info'], TRUE) . '</pre><br/>'
+				]
 			];
 			
-			$images = $form_state->getStorage();
-			
-			foreach ($images as $image) {
-				$form['results'][] = [
-					'#theme' => 'image_style',
-					//'#width' => $variables['width'],
-					//'#height' => $variables['height'],
-					'#style_name' => 'medium',
-					'#uri' => $image->uri,
+			$images = $storage['images'];
+			if($images) {
+				foreach ($images as $image) {
+					$form['results'][] = [
+						'#theme' => 'image_style',
+						//'#width' => $variables['width'],
+						//'#height' => $variables['height'],
+						'#style_name' => 'medium',
+						'#uri' => $image->uri,
+						'#attributes' => [
+							'title' => $image->image_id
+						]
+					]; 
+				}
+			}
+			else {
+				$form['results'] = [
+					'#type' => 'markup',
+					'#markup' => 'Nosimilar image found!',
 				]; 
 			}
 		}
@@ -94,6 +116,7 @@ class SearchForm extends FormBase {
 		
 		$hash = $form_state->getValue('image_hash');
 		$uri = $form_state->getValue('image_path');
+		$radius = $form_state->getValue('radius');
 		
 		$query = \Drupal\UserInterface\hex2bin($hash);
 		
@@ -118,26 +141,19 @@ class SearchForm extends FormBase {
 			}
 		}
 		file_unmanaged_delete($uri);
-		//$search_result = [1, 2];
-		$time_start = microtime(TRUE);
-		$search_result = $dcfs->search($query, 5);
-		$duration = microtime(TRUE) - $time_start;
+		$search_result = $dcfs->search($query, $radius);
 		
-		$form_state->setValue("duration", $duration . ' seconds');
-		
-		if(!$search_result) {
-			drupal_set_message('No similar image is found!', 'error');
-			return ;
+		$images = [];
+		$ids = array_unique($search_result['result']);
+		if($ids) {
+			$images = \Drupal\UserInterface\load_image($ids);
 		}
-// 		drupal_set_message(print_r($search_result, true));
-// 		return ;
-		
-		$ids = array_unique($search_result);
-		
-		$images = \Drupal\UserInterface\load_image($ids);
 		
 		$form_state->setRebuild(TRUE);
-		$form_state->setStorage($images);
+		$form_state->setStorage([
+			'images' => $images,
+			'info' => $search_result['info']
+		]);
 	}
 	
 	
