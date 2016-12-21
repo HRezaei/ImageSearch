@@ -5,3 +5,11 @@ user_interface.home:
     _controller: '\Drupal\UserInterface\UserInterfaceController::main_form'
   requirements:
     _permission: 'access content'
+    
+user_interface.test:
+  path: '/search/test'
+  defaults:
+    _title: 'Automatic Tests On Binary Search Algorithms'
+    _controller: '\Drupal\UserInterface\UserInterfaceController::test_form'
+  requirements:
+    _permission: 'access content'

@@ -10,7 +10,6 @@ namespace Drupal\UserInterface\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\File\Entity;
-use Drupal\bhash;
 
 /**
  * Implements an example form.
@@ -36,7 +35,7 @@ class SearchForm extends FormBase {
 		);
 		$form['radius'] = array(
 				'#type' => 'number',
-				'#title' => $this->t('Weight'),
+				'#title' => $this->t('Search Radius'),
 				'#default_value' => 7,
 		);
 
@@ -70,7 +69,7 @@ class SearchForm extends FormBase {
 						'#style_name' => 'medium',
 						'#uri' => $image->uri,
 						'#attributes' => [
-							'title' => $image->image_id
+							'title' => "image-id={$image->image_id}; {$image->uri}"
 						]
 					]; 
 				}
@@ -102,7 +101,7 @@ class SearchForm extends FormBase {
 		$uri = $file->getFileUri();
 		$path = drupal_realpath($uri);
 		
-		$hash = \Drupal\bhash\BlockHash::generate($path, 8);
+		$hash = \Drupal\imagehash\image_hash($path, 8);
 		
 		$form_state->setValue('image_hash', $hash);
 		$form_state->setValue('image_path', $path);
@@ -120,27 +119,9 @@ class SearchForm extends FormBase {
 		
 		$query = \Drupal\UserInterface\hex2bin($hash);
 		
-		$result = \Drupal\UserInterface\load_image_by_hash($hash);
 		
 		$dcfs = new \Drupal\dcfs\DCFSearch();
 		
-		if (!$result) {
-			drupal_set_message("Your image was new and now is indexed");
-			//@todo move file to a permanent directory
-// 			$file = new ([]);
-// 			$file->setFileUri($uri);
-			$ext = pathinfo($uri, PATHINFO_EXTENSION);
-			$permanent_uri = 'public://images/' . $hash . '.' .$ext;
-			$moved_path = file_unmanaged_move($uri, $permanent_uri);
-			
-			if($moved_path) {
-				
-				$image_id = \Drupal\UserInterface\insert_image($permanent_uri, $hash);
-				
-				$dcfs->index($query, $image_id);
-			}
-		}
-		file_unmanaged_delete($uri);
 		$search_result = $dcfs->search($query, $radius);
 		
 		$images = [];
@@ -148,6 +129,11 @@ class SearchForm extends FormBase {
 		if($ids) {
 			$images = \Drupal\UserInterface\load_image($ids);
 		}
+		
+		$search_result['info'] += [
+			'query' => $query,
+			'hash' => $hash
+		];
 		
 		$form_state->setRebuild(TRUE);
 		$form_state->setStorage([

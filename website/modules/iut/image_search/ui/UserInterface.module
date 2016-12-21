@@ -5,6 +5,7 @@ namespace Drupal\UserInterface;
 
 use \Drupal\Core\Database\StatementInterface;
 use Drupal\user\UserInterface;
+use Drupal\dcfs\DCFSearch;
 
 define('IMAGES_TABLE', 'iut_images');
 
@@ -33,7 +34,7 @@ function load_image($id) {
 function load_image_by_hash($hash) {
 	$image = db_select(IMAGES_TABLE, 'm')
 	->fields('m')
-	->condition('bhash', $hash)
+	->condition('hash', $hash)
 	->execute()
 	->fetchAll();
 
@@ -45,7 +46,7 @@ function insert_image($uri, $hash) {
 	$inserted = db_insert(IMAGES_TABLE)
 		->fields([
 			'uri' => $uri,
-			'bhash' => $hash
+			'hash' => $hash
 		])
 		->execute();
 		
@@ -60,6 +61,41 @@ function hex2bin($number) {
 	$output = '';
 	foreach ($slices as $num) {
 		$output .= str_pad(base_convert($num, 16, 2), 4, '0', STR_PAD_LEFT);
+	}
+	return $output;
+}
+
+
+
+function run_test($num = 20, $radii = [7]) {
+	$images = db_select(IMAGES_TABLE, 'm')
+		->fields('m')
+		->range(0, $num)
+		->orderRandom()
+		->execute()
+		->fetchAll();
+
+	if(!$images) {
+		return "no image selected for test";
+	}
+	$count = count($images);
+	$output = [];
+	
+	$dcfs = new DCFSearch();
+	foreach ($radii as $r) {
+		$sum_total_time = 0;
+		$sum_inter_time = 0;
+		foreach ($images as $key => $image) {
+			$query = hex2bin($image->hash);
+			$result = $dcfs->search2($query, $r);
+			$sum_total_time += $result['info']['total_time'];
+			$sum_inter_time += $result['info']['intersect_time'];
+			
+		}
+		$output[$r] = [
+			'total_time' => $sum_total_time / $count,
+			'intersect_time' => $sum_inter_time / $count
+		];
 	}
 	return $output;
 }
