@@ -1,5 +1,5 @@
-name: BlockHash Integration
+name: Image Hashing Toolbox
 type: module
-description: Integrates BlockHash into Drupal
+description: Generates various image hashes using some third-party libraries
 package: IUT
 core: 8.x

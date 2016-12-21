@@ -1,1 +1,25 @@
 <?php 
+
+namespace Drupal\imagehash;
+
+
+function image_hash($uri, $bits = 8, $method='default') {
+	
+	switch ($method) {
+		case 'phash':
+			return ImageHash::phash($uri, $bits);
+		break;
+		
+		case 'bhash':
+			return ImageHash::bhash($uri, $bits);
+		break;
+		
+		case 'whash':
+			return ImageHash::whash($uri, $bits);
+		break;
+			
+		default:
+			return ImageHash::$default_method($uri, $bits);
+		break;
+	}
+}
