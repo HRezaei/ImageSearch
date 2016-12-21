@@ -7,15 +7,15 @@ namespace Drupal\importer;
 class Importer {
 	
 	
-	public static function import($dir, $num_bits = 64) {
+	public static function import($dir, $hash_method, $num_bits = 64) {
 		
 		$bits = sqrt($num_bits);//blockhash and phash takes a number and generate a hash of lenght number^2
 		$images = file_scan_directory($dir, '/.*\.jpg/');
 		$output = [];
-		$dcfs = new \Drupal\dcfs\DCFSearch();
+		$dcfs = new \Drupal\dcfs\DCFSearch($hash_method);
 		
 		foreach ($images as $file) {
-			$hash = \Drupal\imagehash\image_hash($file->uri, $bits);
+			$hash = \Drupal\imagehash\image_hash($file->uri, $bits, $hash_method);
 			$query = \Drupal\UserInterface\hex2bin($hash);
 			
 			$result = \Drupal\UserInterface\load_image_by_hash($hash);

@@ -3,7 +3,11 @@
 namespace Drupal\imagehash;
 
 
-function image_hash($uri, $bits = 8, $method='default') {
+function image_hash($uri, $bits = 8, $method=NULL) {
+	
+	if(!$method) {
+		$method = ImageHash::$default_method;
+	}
 	
 	switch ($method) {
 		case 'phash':
@@ -19,7 +23,27 @@ function image_hash($uri, $bits = 8, $method='default') {
 		break;
 			
 		default:
-			return ImageHash::$default_method($uri, $bits);
+			die("Method $method not supported");
+			//return call_user_func([ImageHash, ], $uri, $bits);
 		break;
+	}
+}
+
+
+
+function db_number($method) {
+	
+	$db_numbers = [
+		'phash' => 1,
+		'dhash' => 2,
+		'whash' => 3,
+		'bhash' => 4
+	];
+	
+	if(array_key_exists($method, $db_numbers)) {
+		return $db_numbers[$method];
+	}
+	else {
+		return 0;
 	}
 }

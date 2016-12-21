@@ -35,6 +35,17 @@ class DirForm extends FormBase {
 				'#description' => $this->t("e.g. /home/user/photos/ <br/>All jpg images within this directory will be indexed")
 		);
 		
+		$form['hash_method'] = array(
+				'#type' => 'select',
+				'#title' => $this->t('Hashing method'),
+				'#default_value' => 0,
+				'#options' => [
+					'phash' => 'pHash',
+					'bhash' => 'bHash',
+					'whash' => 'wHash'	
+				],
+		);
+		
 		$form['num_bits'] = array(
 				'#type' => 'number',
 				'#title' => $this->t('Number of Bits'),
@@ -76,8 +87,9 @@ class DirForm extends FormBase {
 		
 		$dir = $form_state->getValue('directory');
 		$num_bits = $form_state->getValue('num_bits');
-
-		$result = Importer::import($dir, $num_bits);
+		$hash_method = $form_state->getValue('hash_method');
+		
+		$result = Importer::import($dir, $hash_method, $num_bits);
 		
 		$form_state->setRebuild(TRUE);
 		$form_state->setStorage($result);

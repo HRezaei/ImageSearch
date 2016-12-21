@@ -6,6 +6,8 @@ namespace Drupal\dcfs;
 use \Drupal\redis\Client;
 use Drupal\Core\Cache\Cache;
 use function GuzzleHttp\json_decode;
+use Drupal\imagehash\ImageHash;
+use function Drupal\imagehash\db_number;
 
 class DCFSearch {
 	
@@ -15,16 +17,15 @@ class DCFSearch {
 	private $redis = null;
 	
 	
-	function  __construct() {
+	function  __construct($hash_method = NULL) {
 		
 		$redis = new \Drupal\redis\Client\PhpRedis();
 		$this->redis = $redis->getClient('127.0.0.1', '6379');
-		
-	}
-	
-	
-	private function hashFunction($code, $i) {
-		return "table-$i-bucket-$code";
+		if(!$hash_method) {
+			$hash_method = ImageHash::$default_method;
+		}
+		$db_name = db_number($hash_method);
+		$this->redis->select($db_name);
 	}
 		
 
@@ -38,6 +39,10 @@ class DCFSearch {
 				;
 			break;
 		};
+	}
+	
+	private function hashFunction($code, $i) {
+		return "table-$i-bucket-$code";
 	}
 	
 	function index($q, $key) {
@@ -62,6 +67,7 @@ class DCFSearch {
 		$merge_time = 0;
 		$skipped_combs = 0;
 		$passed_combs = 0;
+		$info = [];
 		$result = [];
 		foreach ($combinations as $comb_index => $comb) {
 			$comb_result = [];
@@ -100,9 +106,13 @@ class DCFSearch {
 				 		$skipped_combs++;
 						continue 2;				 		
 				 	}
+				 	else if(!array_diff($comb_result, $result)) {
+				 		$skipped_combs++;
+				 		continue 2;
+				 	}
 				}
-				$passed_combs++;
 			}
+			$passed_combs++;
 			$merge_start = microtime(TRUE);
 			$result = array_merge($result, $comb_result);
 		 	$result = array_unique($result);
@@ -121,6 +131,93 @@ class DCFSearch {
 			]
 		];		
 	}
+	
+	function search2($query, $r) {
+		$start = microtime(TRUE);
+	
+		$subcodes = $this->generateSubcodes($query);
+		$pseudo_codes = $this->generatePseudoCodes($subcodes, $r);
+		$combinations = $this->generateCombinations($r);
+	
+		$union_time = 0;
+		$intersect_time = 0;
+		$merge_time = 0;
+		$skipped_combs = 0;
+		$passed_combs = 0;
+		$info = [];
+		$result = [];
+		//@todo Consider deleting all can-i-j after completing search 
+		$min_bits_to_flip = min($r, $this::$lengthOfSubCodes);
+		
+		drupal_set_message("section1:" . (microtime(TRUE)-$start));
+		
+		for($t=0; $t < $this::$numberOfSubCodes; $t++) {
+			$code = $subcodes[$t];
+			for ($j=0; $j <= $min_bits_to_flip; $j++) {
+				$hashes = ["can-$t-$j"];//First parameter of sUnionStore is the destination key
+				if($j) {
+					$hashes[] = "can-$t-" . ($j-1);//We need the result of previous step to be included in union
+				}
+				foreach ($pseudo_codes[$code][$j] as $query) {
+					$hashes[] = $this->hashFunction($query, $t);
+				}
+				//store can t,j
+				$union_start = microtime(TRUE);
+				$can[$t][$j] = call_user_func_array([$this->redis,'sUnionStore'], $hashes);
+				$union_time += microtime(TRUE) - $union_start;
+			}
+		}
+		
+		drupal_set_message("section2:" . (microtime(TRUE)-$start));
+		
+		foreach ($combinations as $comb_index => $comb) {
+			$comb_result = [];
+			$keys = [];
+			foreach ($comb as $t => $num) {
+				/*if (empty($can[$t][$num])) {
+					$skipped_combs++;
+					continue 2;
+				}*/
+				$keys[] = "can-$t-$num";
+			}
+			//intersect
+			$intersect_start = microtime(TRUE);
+			$comb_result = $this->redis->sInter($keys);
+			$intersect_time += (microtime(TRUE) - $intersect_start);
+			if(!empty($comb_result)) {
+				$merge_start = microtime(TRUE);
+				$result = array_merge($result, $comb_result);
+				$result = array_unique($result);
+				$merge_time += (microtime(TRUE) - $merge_start);
+			}
+			$passed_combs++;
+		}
+		
+		drupal_set_message("section3:" . (microtime(TRUE)-$start));
+		
+		$delete_start = microtime(TRUE);
+		for ($p=0; $p < $this::$numberOfSubCodes; $p++) {
+			for($k = 0; $k <= $min_bits_to_flip; $k++) {
+				$this->redis->del("can-$p-$k");
+			}
+		}
+		$delete_time = microtime(TRUE) - $delete_start;
+		
+		drupal_set_message("section4:" . (microtime(TRUE)-$start));
+		
+		return [
+				'result' => $result,
+				'info' => [
+						'total_time' => microtime(TRUE) - $start,
+						'union_time' => $union_time,
+						'intersect_time' => $intersect_time,
+						'merge_time' => $merge_time,
+						'delete_time' => $delete_time,
+						'skipped_combs' => $skipped_combs,
+						'passed_combs' => $passed_combs
+				]
+		];
+	}				
 	
 	protected function generateSubcodes($q) {
 		return str_split($q, $this::$lengthOfSubCodes);
@@ -262,5 +359,11 @@ class DCFSearch {
 		}
 		
 		return $output;
+	}
+	
+	public function prepare_for_reindex($hash_method) {
+		$db_name = db_number($hash_method);
+		$this->redis->select($db_name);
+		$this->redis->flushDB();
 	}
 }

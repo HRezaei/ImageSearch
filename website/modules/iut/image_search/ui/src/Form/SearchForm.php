@@ -122,7 +122,7 @@ class SearchForm extends FormBase {
 		
 		$dcfs = new \Drupal\dcfs\DCFSearch();
 		
-		$search_result = $dcfs->search($query, $radius);
+		$search_result = $dcfs->search2($query, $radius);
 		
 		$images = [];
 		$ids = array_unique($search_result['result']);
