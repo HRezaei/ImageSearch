@@ -149,7 +149,7 @@ class DCFSearch {
 		//@todo Consider deleting all can-i-j after completing search 
 		$min_bits_to_flip = min($r, $this::$lengthOfSubCodes);
 		
-		drupal_set_message("section1:" . (microtime(TRUE)-$start));
+		//drupal_set_message("section1:" . (microtime(TRUE)-$start));
 		
 		for($t=0; $t < $this::$numberOfSubCodes; $t++) {
 			$code = $subcodes[$t];
@@ -168,7 +168,7 @@ class DCFSearch {
 			}
 		}
 		
-		drupal_set_message("section2:" . (microtime(TRUE)-$start));
+		//drupal_set_message("section2:" . (microtime(TRUE)-$start));
 		
 		foreach ($combinations as $comb_index => $comb) {
 			$comb_result = [];
@@ -193,7 +193,7 @@ class DCFSearch {
 			$passed_combs++;
 		}
 		
-		drupal_set_message("section3:" . (microtime(TRUE)-$start));
+		//drupal_set_message("section3:" . (microtime(TRUE)-$start));
 		
 		$delete_start = microtime(TRUE);
 		for ($p=0; $p < $this::$numberOfSubCodes; $p++) {
@@ -203,7 +203,7 @@ class DCFSearch {
 		}
 		$delete_time = microtime(TRUE) - $delete_start;
 		
-		drupal_set_message("section4:" . (microtime(TRUE)-$start));
+		//drupal_set_message("section4:" . (microtime(TRUE)-$start));
 		
 		return [
 				'result' => $result,
