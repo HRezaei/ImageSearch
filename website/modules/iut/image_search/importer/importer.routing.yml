@@ -1,0 +1,8 @@
+importer.form:
+  path: '/search/import'
+  defaults:
+    _title: 'Import Images'
+    _controller: '\Drupal\importer\importerController::dir_form'
+  requirements:
+    _permission: 'access content'
+    
