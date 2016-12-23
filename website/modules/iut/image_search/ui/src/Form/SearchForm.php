@@ -10,6 +10,8 @@ namespace Drupal\UserInterface\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\File\Entity;
+use function Drupal\imagehash\db_number;
+use Drupal\imagehash\ImageHash;
 
 /**
  * Implements an example form.
@@ -119,10 +121,10 @@ class SearchForm extends FormBase {
 		
 		$query = \Drupal\UserInterface\hex2bin($hash);
 		
+		$db_name = db_number(ImageHash::$default_method);
+		$dcfs = new \Drupal\dcfs\DCFSearch($db_name);
 		
-		$dcfs = new \Drupal\dcfs\DCFSearch();
-		
-		$search_result = $dcfs->search2($query, $radius);
+		$search_result = $dcfs->improved_search($query, $radius);
 		
 		$images = [];
 		$ids = array_unique($search_result['result']);

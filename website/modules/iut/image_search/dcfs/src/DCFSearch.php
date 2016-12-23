@@ -5,9 +5,6 @@ namespace Drupal\dcfs;
 
 use \Drupal\redis\Client;
 use Drupal\Core\Cache\Cache;
-use function GuzzleHttp\json_decode;
-use Drupal\imagehash\ImageHash;
-use function Drupal\imagehash\db_number;
 
 class DCFSearch {
 	
@@ -17,15 +14,13 @@ class DCFSearch {
 	private $redis = null;
 	
 	
-	function  __construct($hash_method = NULL) {
+	function  __construct($db_name = NULL) {
 		
 		$redis = new \Drupal\redis\Client\PhpRedis();
 		$this->redis = $redis->getClient('127.0.0.1', '6379');
-		if(!$hash_method) {
-			$hash_method = ImageHash::$default_method;
+		if($db_name) {
+			$this->redis->select($db_name);
 		}
-		$db_name = db_number($hash_method);
-		$this->redis->select($db_name);
 	}
 		
 
@@ -45,12 +40,12 @@ class DCFSearch {
 		return "table-$i-bucket-$code";
 	}
 	
-	function index($q, $key) {
+	function index($q, $id) {
 		
 		$subcodes = $this->generateSubcodes($q);
 		foreach ($subcodes as $i => $subcode) {
 			$bukcet_number = $this->hashFunction($subcode, $i);
-			$this->redis->sAdd($bukcet_number, $key);
+			$this->redis->sAdd($bukcet_number, $id);
 		}
 	}
 	
@@ -72,8 +67,8 @@ class DCFSearch {
 		foreach ($combinations as $comb_index => $comb) {
 			$comb_result = [];
 			foreach ($comb as $key => $num) {
-				if(!isset($can_cummulative[$key][$num])) {
-					$can_cummulative[$key][$num] = [];
+				if(!isset($can_cumulative[$key][$num])) {
+					$can_cumulative[$key][$num] = [];
 					$code = $subcodes[$key];
 					for ($i=0; $i <= $num; $i++) {
 						if(!isset($can[$key][$i])) {
@@ -86,21 +81,21 @@ class DCFSearch {
 							$redis_time += microtime(TRUE) - $redis_start;
 						}
 						//This merge can be done by redis if we use sunionStore in previous lines
-						$can_cummulative[$key][$num] = array_merge($can_cummulative[$key][$num], $can[$key][$i]);
+						$can_cumulative[$key][$num] = array_merge($can_cumulative[$key][$num], $can[$key][$i]);
 					}
 				}
 				
-				if (empty($can_cummulative[$key][$num])) {
+				if (empty($can_cumulative[$key][$num])) {
 					$skipped_combs++;
 					continue 2;
 				}
 				
 				if (!$key) {
-					$comb_result = $can_cummulative[$key][$num];
+					$comb_result = $can_cumulative[$key][$num];
 				}
 				else {
 					$intersect_start = microtime(TRUE);
-				 	$comb_result = array_intersect($comb_result, $can_cummulative[$key][$num]);
+				 	$comb_result = array_intersect($comb_result, $can_cumulative[$key][$num]);
 				 	$intersect_time += (microtime(TRUE) - $intersect_start);
 				 	if(empty($comb_result)) {
 				 		$skipped_combs++;
@@ -132,7 +127,7 @@ class DCFSearch {
 		];		
 	}
 	
-	function search2($query, $r) {
+	function improved_search($query, $r) {
 		$start = microtime(TRUE);
 	
 		$subcodes = $this->generateSubcodes($query);
@@ -158,8 +153,8 @@ class DCFSearch {
 				if($j) {
 					$hashes[] = "can-$t-" . ($j-1);//We need the result of previous step to be included in union
 				}
-				foreach ($pseudo_codes[$code][$j] as $query) {
-					$hashes[] = $this->hashFunction($query, $t);
+				foreach ($pseudo_codes[$code][$j] as $ps_query) {
+					$hashes[] = $this->hashFunction($ps_query, $t);
 				}
 				//store can t,j
 				$union_start = microtime(TRUE);

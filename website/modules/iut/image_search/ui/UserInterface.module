@@ -6,6 +6,8 @@ namespace Drupal\UserInterface;
 use \Drupal\Core\Database\StatementInterface;
 use Drupal\user\UserInterface;
 use Drupal\dcfs\DCFSearch;
+use function Drupal\imagehash\db_number;
+use Drupal\imagehash\ImageHash;
 
 define('IMAGES_TABLE', 'iut_images');
 
@@ -81,13 +83,14 @@ function run_test($num = 20, $radii = [7]) {
 	$count = count($images);
 	$output = [];
 	
-	$dcfs = new DCFSearch();
+	$db_name = db_number(ImageHash::$default_method);
+	$dcfs = new DCFSearch($db_name);
 	foreach ($radii as $r) {
 		$sum_total_time = 0;
 		$sum_inter_time = 0;
 		foreach ($images as $key => $image) {
 			$query = hex2bin($image->hash);
-			$result = $dcfs->search2($query, $r);
+			$result = $dcfs->search($query, $r);
 			$sum_total_time += $result['info']['total_time'];
 			$sum_inter_time += $result['info']['intersect_time'];
 			

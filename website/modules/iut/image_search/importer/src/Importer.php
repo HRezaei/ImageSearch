@@ -4,6 +4,9 @@
 namespace Drupal\importer;
 
 
+use function Drupal\imagehash\db_number;
+use Drupal\imagehash\ImageHash;
+
 class Importer {
 	
 	
@@ -12,7 +15,8 @@ class Importer {
 		$bits = sqrt($num_bits);//blockhash and phash takes a number and generate a hash of lenght number^2
 		$images = file_scan_directory($dir, '/.*\.jpg/');
 		$output = [];
-		$dcfs = new \Drupal\dcfs\DCFSearch($hash_method);
+		$db_name = db_number($hash_method);
+		$dcfs = new \Drupal\dcfs\DCFSearch($db_name);
 		
 		foreach ($images as $file) {
 			$hash = \Drupal\imagehash\image_hash($file->uri, $bits, $hash_method);
@@ -50,7 +54,8 @@ class Importer {
 		$images = file_scan_directory(drupal_realpath('public://images/'), '/.*\.jpg/');
 		//$images = \Drupal\UserInterface\load_image();//Load all images
 		$output = [];
-		$dcfs = new \Drupal\dcfs\DCFSearch('whash');
+		$db_name = db_number(ImageHash::$default_method);
+		$dcfs = new \Drupal\dcfs\DCFSearch($db_name);
 		
 		$dcfs->reindex($hash_method);
 		db_query("TRUNCATE " . IMAGES_TABLE);
