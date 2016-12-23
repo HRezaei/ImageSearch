@@ -270,10 +270,11 @@ class DCFSearch {
 		
 		$list = $this->fractionalize($r);
 		$output = [];
-		foreach ($list as $key => &$value) {
-			$value = array_pad(explode(',', $value), $this::$lengthOfSubCodes, '0');
+		foreach ($list as $value) {
+			$value = array_pad(explode(',', $value), $this::$numberOfSubCodes, '0');
 			$combinations = $this->combinations($value);
 			$output = array_merge($output, $combinations);
+			unset($combinations);
 		}
 		
 		\Drupal::cache()->set($cache_id, json_encode($output));
