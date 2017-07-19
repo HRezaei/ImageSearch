@@ -18,12 +18,3 @@ CREATE TABLE `file_managed` (
   `created` int(11) DEFAULT NULL,
   `changed` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='The base table for file entities.';
-
---
--- Dumping data for table `file_managed`
---
-
-INSERT INTO `file_managed` (`fid`, `uuid`, `langcode`, `uid`, `filename`, `uri`, `filemime`, `filesize`, `status`, `created`, `changed`) VALUES
-(1, 'a67fc455-a155-44c5-baae-2c6b270f7d18', 'en', 0, 'cat05.jpg', 'temporary://iut_upload/cat05.jpg', 'image/jpeg', 41278, 0, 1490499882, 1490499882),
-(2, '20a12b5b-8dff-44e7-878f-f1865be57b2f', 'en', 0, 'cat05.jpg', 'temporary://iut_upload/cat05_0.jpg', 'image/jpeg', 41278, 0, 1490499961, 1490499961),
-(3, 'd52df443-a288-4221-82fc-f5a59e38695c', 'en', 0, 'cat05.jpg', 'temporary://iut_upload/cat05_1.jpg', 'image/jpeg', 41278, 0, 1490500015, 1490500015);

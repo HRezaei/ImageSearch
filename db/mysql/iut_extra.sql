@@ -139,6 +139,13 @@ ALTER TABLE `cache_render`
   ADD KEY `expire` (`expire`);
 
 --
+-- Indexes for table `cache_toolbar`
+--
+ALTER TABLE `cache_toolbar`
+  ADD PRIMARY KEY (`cid`),
+  ADD KEY `expire` (`expire`);
+
+--
 -- Indexes for table `comment`
 --
 ALTER TABLE `comment`
@@ -164,6 +171,7 @@ ALTER TABLE `comment_field_data`
   ADD KEY `comment_field__comment_type__target_id` (`comment_type`),
   ADD KEY `comment_field__uid__target_id` (`uid`),
   ADD KEY `comment_field__created` (`created`),
+  ADD KEY `comment__status_comment_type` (`status`,`comment_type`,`cid`),
   ADD KEY `comment__status_pid` (`pid`,`status`),
   ADD KEY `comment__num_new` (`entity_id`,`entity_type`,`comment_type`,`status`,`created`,`cid`,`thread`(191)),
   ADD KEY `comment__entity_langcode` (`entity_id`,`entity_type`,`comment_type`,`default_langcode`);
@@ -202,14 +210,6 @@ ALTER TABLE `file_usage`
   ADD KEY `type_id` (`type`,`id`),
   ADD KEY `fid_count` (`fid`,`count`),
   ADD KEY `fid_module` (`fid`,`module`);
-
---
--- Indexes for table `flood`
---
-ALTER TABLE `flood`
-  ADD PRIMARY KEY (`fid`),
-  ADD KEY `allow` (`event`,`identifier`,`timestamp`),
-  ADD KEY `purge` (`expiration`);
 
 --
 -- Indexes for table `history`
@@ -283,8 +283,8 @@ ALTER TABLE `node_field_data`
   ADD KEY `node_field__uid__target_id` (`uid`),
   ADD KEY `node_field__created` (`created`),
   ADD KEY `node_field__changed` (`changed`),
-  ADD KEY `node__frontpage` (`promote`,`status`,`sticky`,`created`),
   ADD KEY `node__status_type` (`status`,`type`,`nid`),
+  ADD KEY `node__frontpage` (`promote`,`status`,`sticky`,`created`),
   ADD KEY `node__title_type` (`title`(191),`type`(4));
 
 --
@@ -570,12 +570,7 @@ ALTER TABLE `comment`
 -- AUTO_INCREMENT for table `file_managed`
 --
 ALTER TABLE `file_managed`
-  MODIFY `fid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
---
--- AUTO_INCREMENT for table `flood`
---
-ALTER TABLE `flood`
-  MODIFY `fid` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Unique flood event ID.';
+  MODIFY `fid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `menu_link_content`
 --
@@ -585,7 +580,7 @@ ALTER TABLE `menu_link_content`
 -- AUTO_INCREMENT for table `menu_tree`
 --
 ALTER TABLE `menu_tree`
-  MODIFY `mlid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'The menu link ID (mlid) is the integer primary key.', AUTO_INCREMENT=82;
+  MODIFY `mlid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'The menu link ID (mlid) is the integer primary key.';
 --
 -- AUTO_INCREMENT for table `node`
 --
@@ -605,12 +600,12 @@ ALTER TABLE `queue`
 -- AUTO_INCREMENT for table `sequences`
 --
 ALTER TABLE `sequences`
-  MODIFY `value` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'The value of the sequence.', AUTO_INCREMENT=2;
+  MODIFY `value` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'The value of the sequence.';
 --
 -- AUTO_INCREMENT for table `shortcut`
 --
 ALTER TABLE `shortcut`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `taxonomy_term_data`
 --
@@ -625,4 +620,4 @@ ALTER TABLE `url_alias`
 -- AUTO_INCREMENT for table `watchdog`
 --
 ALTER TABLE `watchdog`
-  MODIFY `wid` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key: Unique watchdog event ID.', AUTO_INCREMENT=372;
+  MODIFY `wid` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key: Unique watchdog event ID.';

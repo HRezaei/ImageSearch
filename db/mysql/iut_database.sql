@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jul 19, 2017 at 07:49 PM
+-- Generation Time: Jul 19, 2017 at 08:13 PM
 -- Server version: 5.7.18-0ubuntu0.16.04.1
 -- PHP Version: 5.6.30
 
@@ -17,5 +17,5 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `drupal_iut`
+-- Database: `image_search`
 --

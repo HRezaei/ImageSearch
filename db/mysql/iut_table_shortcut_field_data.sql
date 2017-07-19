@@ -16,11 +16,3 @@ CREATE TABLE `shortcut_field_data` (
   `link__options` longblob COMMENT 'Serialized array of options for the link.',
   `default_langcode` tinyint(4) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='The data table for shortcut entities.';
-
---
--- Dumping data for table `shortcut_field_data`
---
-
-INSERT INTO `shortcut_field_data` (`id`, `shortcut_set`, `langcode`, `title`, `weight`, `link__uri`, `link__title`, `link__options`, `default_langcode`) VALUES
-(1, 'default', 'en', 'Add content', -20, 'internal:/node/add', NULL, 0x613a303a7b7d, 1),
-(2, 'default', 'en', 'All content', -19, 'internal:/admin/content', NULL, 0x613a303a7b7d, 1);

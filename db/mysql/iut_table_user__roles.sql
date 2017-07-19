@@ -14,10 +14,3 @@ CREATE TABLE `user__roles` (
   `delta` int(10) UNSIGNED NOT NULL COMMENT 'The sequence number for this data item, used for multi-value fields',
   `roles_target_id` varchar(255) CHARACTER SET ascii NOT NULL COMMENT 'The ID of the target entity.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Data storage for user field roles.';
-
---
--- Dumping data for table `user__roles`
---
-
-INSERT INTO `user__roles` (`bundle`, `deleted`, `entity_id`, `revision_id`, `langcode`, `delta`, `roles_target_id`) VALUES
-('user', 0, 1, 1, 'en', 0, 'administrator');
